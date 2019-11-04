@@ -183,7 +183,7 @@
                                 "command": "suricata-update"
                             },
                             "6-enable-hourly-updates": {
-                                "command":  "echo \"10 * * * * suricata-update\" | crontab"
+                                "command":  "echo \"10 * * * * suricata-update && suricatasc -c reload-rules\" | crontab"
                             },
                             "7-run-suricata": {
                                 "command": "suricata --set decoder.vxlan.enabled=true -k none -D -i eth0 udp port 4789"
