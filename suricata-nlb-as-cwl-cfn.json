@@ -17,7 +17,7 @@
         "MaxSize": {
             "Type": "Number",
             "Description": "Maxiumum number of instances in the Auto Scaling group",
-            "Default": 4
+            "Default": 2
         },
         "Subnets" : {
             "Type" : "List<AWS::EC2::Subnet::Id>",
@@ -138,12 +138,13 @@
                 }
             },
             "CreationPolicy": {
-                "ResourceSignal": {}
+                "ResourceSignal": {
+                    "Count": {"Ref": "MinSize"}
+                }
             }
         },
         "SuricataLaunchTemplate": {
             "Type": "AWS::EC2::LaunchTemplate",
-            "Version": "1",
             "Metadata": {
                 "AWS::CloudFormation::Init": {
                     "config": {
