@@ -1,7 +1,7 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
 
-    "Description": "Create an auto-scaled, load-balanced Suricata IDS",
+    "Description": "Create auto-scaled, load-balanced Suricata IDS",
 
     "Parameters": {
         "VpcId" : {
@@ -133,9 +133,21 @@
                     { "Ref": "SuricataTargetGroup"}
                 ],
                 "LaunchTemplate": {
-                    "LaunchTemplateId": {"Ref" : "SuricataLaunchTemplate" },
+                    "LaunchTemplateId": { "Ref" : "SuricataLaunchTemplate" },
                     "Version": "1"
-                }
+                },
+                "NotificationConfigurations": [
+                    {
+                        "TopicARN": { "Ref": "NotificationTopic" },
+                        "NotificationTypes": [
+                            "autoscaling:EC2_INSTANCE_LAUNCH",
+                            "autoscaling:EC2_INSTANCE_LAUNCH_ERROR",
+                            "autoscaling:EC2_INSTANCE_TERMINATE",
+                            "autoscaling:EC2_INSTANCE_TERMINATE_ERROR",
+                            "autoscaling:TEST_NOTIFICATION"
+                        ]
+                    }
+                ]
             },
             "CreationPolicy": {
                 "ResourceSignal": {
