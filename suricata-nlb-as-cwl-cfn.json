@@ -147,7 +147,17 @@
             "Type": "AWS::EC2::LaunchTemplate",
             "Metadata": {
                 "AWS::CloudFormation::Init": {
-                    "config": {
+                    "configSets": {
+                        "configure-all": [ "install-configure-cloudwatch-agent", "install-epel", "install-suricata"]
+                    },
+                    "install-epel": {
+                        "commands": {
+                            "install-epel-extra": {
+                                "command": "amazon-linux-extras install epel -y"
+                            }
+                        }
+                    },
+                    "install-configure-cloudwatch-agent": {
                         "files": {
                             "/opt/aws/amazon-cloudwatch-agent/bin/config.json": {
                                 "content": {
@@ -167,34 +177,45 @@
                                 }
                             }
                         },
-                        "commands": {
-                            "1-install-CloudWatch-agent": {
-                                "command": "rpm -Uvh https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm"
-                            },
-                            "2-configure-CloudWatch-agent:": {
-                                "command": "amazon-cloudwatch-agent-ctl -a fetch-config -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json -s"
-                            },
-                            "3-install-epel": {
-                                "command": "amazon-linux-extras install epel -y"
-                            },
-                            "4-install-suricata": {
-                                "command": "yum install suricata -y"
-                            },
-                            "5-update-suricata": {
-                                "command": "suricata-update"
-                            },
-                            "6-enable-hourly-updates": {
-                                "command":  "echo \"10 * * * * suricata-update && suricatasc -c reload-rules\" | crontab"
-                            },
-                            "7-run-suricata": {
-                                "command": "suricata --set decoder.vxlan.enabled=true -k none -D -i eth0 udp port 4789"
+                        "packages": {
+                            "rpm": {
+                                "cloudwatch-agent": "https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm"
                             }
                         },
-                        "groups": {},
-                        "packages": {},
-                        "services": {},
-                        "sources": {},
-                        "users": {}
+                        "commands": {
+                            "configure-agent": {
+                                "command": "amazon-cloudwatch-agent-ctl -a fetch-config -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json -s"
+                            } 
+                        }
+                    },
+                    "install-suricata": {
+                        "packages": {
+                            "yum": {
+                                "suricata": []
+                            }
+                        },
+                        "files": {
+                            "/etc/sysconfig/suricata": {
+                                "content": "OPTIONS=\"--set decoder.vxlan.enabled=true -k none -i eth0 --user suricata udp port 4789\""
+                            }
+                        },
+                        "commands": {
+                            "1-update-suricata": {
+                                "command": "suricata-update"
+                            },
+                            "2-enable-hourly-updates": {
+                                "command":  "echo \"10 * * * * suricata-update && suricatasc -c reload-rules\" | crontab"
+                            }
+                        },
+                        "services": {
+                            "sysvinit": {
+                                "suricata": {
+                                    "enabled": "true",
+                                    "ensureRunning" : "true",
+                                    "files": ["/etc/suricata/suricata.yaml"]
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -222,7 +243,7 @@
                                         "Fn::Join": [
                                             " ",
                                             [
-                                                "/opt/aws/bin/cfn-init -v",
+                                                "/opt/aws/bin/cfn-init -v -c configure-all",
                                                 "--stack",
                                                 {
                                                     "Ref": "AWS::StackName"
